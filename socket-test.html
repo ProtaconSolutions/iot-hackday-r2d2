@@ -26,21 +26,21 @@
         // We use the robot nsp (namespace) to connect to one of the devices
         // in this case the led we added in our cylon robot codef
         //device = io('http://127.0.0.1:3333/api/robots/r2d2/devices/servo');
-        device = io('http://127.0.0.1:3333/api/robots/r2d2');
+        device = io('http://192.168.140.132:3333/api/robots/r2d2');
 
-        setInterval(function() {
-            device.emit('drive', {speedBR: 90, speedBL:120, speedFR: 0, speedFL: 180});
-        }, 2000);
+        var leftIsDown = false;
+        var rightIsDown = false;
+        var upIsDown = false;
+        var downIsDown = false;
+
+        var speed = 90;
+        var zeroSpeed = 90;
+
+        var leftSpeed = zeroSpeed - speed;
+        var rightSpeed = zeroSpeed + speed;
 
         /*setInterval(function() {
-            if (clockwise) {
-                device.emit('myCounterclockwise');
-                clockwise = false;
-            } else {
-                device.emit('myClockwise');
-                clockwise = true;
-            }
-            //device.emit('counterClockwise');
+            device.emit('drive', {speedBR: 90, speedBL:120, speedFR: 0, speedFL: 180});
         }, 2000);*/
 
         device.on('message', function(payload) {
@@ -58,9 +58,134 @@
         msg = 'You have been subscribed to Cylon sockets:' + device.nsp;
 
         $('#messages').append($('<li>').text(msg));
+
+        $('#driveButton').click(function() {
+            var backRight = parseInt($('#rightBack').val());
+            var backLeft = parseInt($('#leftBack').val());
+            var frontRight = parseInt($('#rightFront').val());
+            var frontLeft = parseInt($('#leftFront').val());
+            device.emit('drive', {speedBR: backRight, speedBL: backLeft, speedFR: frontRight, speedFL: frontLeft});
+        });
+
+        $('#speed').change(function() {
+            var speedVal = parseInt($(this).val());
+
+            speed = speedVal;
+            leftSpeed = zeroSpeed - speed;
+            rightSpeed = zeroSpeed + speed;
+        });
+
+        $('#forwardButton').click(function() {
+            device.emit('drive', {speedBR: leftSpeed, speedBL: rightSpeed, speedFR: leftSpeed, speedFL: rightSpeed});
+        });
+
+        $('#backButton').click(function() {
+            device.emit('drive', {speedBR: rightSpeed, speedBL: leftSpeed, speedFR: rightSpeed, speedFL: leftSpeed});
+        });
+
+        $('#rightButton').click(function() {
+            device.emit('drive', {speedBR: rightSpeed, speedBL: rightSpeed, speedFR: rightSpeed, speedFL: rightSpeed});
+        });
+
+        $('#leftButton').click(function() {
+            device.emit('drive', {speedBR: leftSpeed, speedBL: leftSpeed, speedFR: leftSpeed, speedFL: leftSpeed});
+        });
+
+        $('#stopButton').click(function() {
+            device.emit('drive', {speedBR: zeroSpeed, speedBL: zeroSpeed, speedFR: zeroSpeed, speedFL: zeroSpeed});
+        });
+
+        $(window).keydown(function(event) {
+            //console.log(event.which);
+            if (event.which == 37 && !leftIsDown) {
+                leftIsDown = true;
+                steer();
+            }
+            else if (event.which == 38 && !upIsDown) {
+                upIsDown = true;
+                steer();
+            }
+            else if (event.which == 39 && !rightIsDown) {
+                rightIsDown = true;
+                steer();
+            }
+            else if (event.which == 40 && !downIsDown) {
+                downIsDown = true;
+                steer();
+            }
+
+            if (event.which == 17) {
+                device.emit('hoot');
+            }
+        });
+
+        $(window).keyup(function(event) {
+            console.log("keyup");
+            if (event.which == 37) {
+                leftIsDown = false;
+            }
+            else if (event.which == 38) {
+                upIsDown = false;
+            }
+            else if (event.which == 39) {
+                rightIsDown = false;
+            }
+            else if (event.which == 40) {
+                downIsDown = false;
+            }
+
+            steer();
+        });
+
+        function steer() {
+            console.log("steer");
+            switch (true) {
+                case upIsDown && leftIsDown:
+                    device.emit('drive', {speedBR: 0, speedBL: 110, speedFR: 0, speedFL: 110});
+                    break;
+                case upIsDown && rightIsDown:
+                    device.emit('drive', {speedBR: 70, speedBL: 180, speedFR: 70, speedFL: 180});
+                    break;
+                case upIsDown:
+                    device.emit('drive', {speedBR: leftSpeed, speedBL: rightSpeed, speedFR: leftSpeed, speedFL: rightSpeed});
+                    break;
+                case downIsDown:
+                    device.emit('drive', {speedBR: rightSpeed, speedBL: leftSpeed, speedFR: rightSpeed, speedFL: leftSpeed});
+                    break;
+                case leftIsDown:
+                    device.emit('drive', {speedBR: leftSpeed, speedBL: leftSpeed, speedFR: leftSpeed, speedFL: leftSpeed});
+                    break;
+                case rightIsDown:
+                    device.emit('drive', {speedBR: rightSpeed, speedBL: rightSpeed, speedFR: rightSpeed, speedFL: rightSpeed});
+                    break;
+                default:
+                    device.emit('drive', {speedBR: zeroSpeed, speedBL: zeroSpeed, speedFR: zeroSpeed, speedFL: zeroSpeed});
+                    break;
+            }
+        }
     };
 </script>
 <body>
+<label>Taka oikea</label>
+<input type="number" id="rightBack"/>
+<label>Taka vasen</label>
+<input type="number" id="leftBack"/>
+<label>Etu oikea</label>
+<input type="number" id="rightFront"/>
+<label>Etu vasen</label>
+<input type="number" id="leftFront"/>
+<button id="driveButton">Drive</button>
+
+<label>Nopeus</label>
+<input type="number" id="speed"/>
+
+<div>
+<button id="forwardButton">Forward</button>
+<button id="backButton">Back</button>
+<button id="leftButton">Left</button>
+<button id="rightButton">Right</button>
+<button id="stopButton">Stop</button>
+</div>
 <ul id="messages"></ul>
 </body>
 </html>
