@@ -17,14 +17,12 @@ Cylon.robot({
 
         every((1).second(), function() {
             if (clockwise) {
-                my.servo.rotateWithSpeed(110);
+                my.servo.counterClockwise();
                 clockwise = false;
             } else {
-                my.servo.rotateWithSpeed(0);
+                my.servo.clockwise();
                 clockwise = true;
             }
-
-            my.led.toggle();
         });
     }
 }).start();
